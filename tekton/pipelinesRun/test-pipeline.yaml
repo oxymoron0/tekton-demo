@@ -14,7 +14,7 @@ spec:
     - name: image-name
       value: tekton-demo-app
     - name: image-registry
-      value: harbor.leorca.org/library
+      value: harbor.leorca.org/tekton-test
     - name: manifest-repo
       value: https://github.com/oxymoron0/tekton_demo.git
     - name: environment

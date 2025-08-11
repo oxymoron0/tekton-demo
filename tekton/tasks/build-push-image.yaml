@@ -4,6 +4,13 @@ metadata:
   name: build-push-image
   namespace: tekton-pipelines
 spec:
+  volumes:
+    - name: docker-config
+      secret:
+        secretName: docker-credentials
+        items:
+          - key: .dockerconfigjson
+            path: config.json
   params:
     - name: IMAGE # Dockerfile 경로
       type: string
@@ -34,9 +41,9 @@ spec:
     - name: build-and-push
       image: gcr.io/kaniko-project/executor:latest
       workingDir: $(workspaces.source.path)
-      env:
-        - name: DOCKER_CONFIG
-          value: $(workspaces.dockerconfig.path)
+      volumeMounts:
+        - name: docker-config
+          mountPath: /kaniko/.docker
       args:
         - --dockerfile=$(params.DOCKERFILE)
         - --context=$(workspaces.source.path)/$(params.CONTEXT)
