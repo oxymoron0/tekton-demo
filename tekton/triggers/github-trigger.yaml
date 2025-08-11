@@ -1,0 +1,126 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-listener
+  namespace: tekton-pipelines
+spec:
+  serviceAccountName: tekton-triggers-sa
+  triggers:
+    - name: github-push
+      interceptors:
+        - ref:
+            name: github
+          params:
+            - name: eventTypes
+              value: ["push", "pull_request"]
+        - ref:
+            name: cel
+          params:
+            - name: filter
+              value: >
+                (header.match('X-GitHub-Event', 'push') &&
+                 body.ref == 'refs/heads/main') ||
+                (header.match('X-GitHub-Event', 'pull_request') &&
+                 body.action in ['opened', 'synchronize', 'reopened'])
+      bindings:
+        - ref: github-push-binding
+      template:
+        ref: github-push-template
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: github-push-binding
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: git-repo-url
+      value: $(body.repository.clone_url)
+    - name: git-revision
+      value: $(body.after)
+    - name: git-repo-name
+      value: $(body.repository.name)
+    - name: event-type
+      value: $(header.X-GitHub-Event)
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: github-push-template
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: git-repo-url
+    - name: git-revision
+    - name: git-repo-name
+    - name: event-type
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: $(tt.params.git-repo-name)-run-
+        namespace: tekton-pipelines
+      spec:
+        pipelineRef:
+          name: ci-cd-pipeline
+        params:
+          - name: repo-url
+            value: $(tt.params.git-repo-url)
+          - name: repo-revision
+            value: $(tt.params.git-revision)
+          - name: image-name
+            value: $(tt.params.git-repo-name)
+          - name: image-registry
+            value: ghcr.io/your-org  # Change this to your registry
+          - name: manifest-repo
+            value: https://github.com/your-org/k8s-manifests.git  # Change this
+          - name: environment
+            value: dev
+        workspaces:
+          - name: shared-workspace
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 1Gi
+          - name: docker-credentials
+            secret:
+              secretName: docker-credentials
+          - name: git-credentials
+            secret:
+              secretName: git-credentials
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-triggers-sa
+  namespace: tekton-pipelines
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tekton-triggers-binding
+  namespace: tekton-pipelines
+subjects:
+  - kind: ServiceAccount
+    name: tekton-triggers-sa
+    namespace: tekton-pipelines
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-eventlistener-roles
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tekton-triggers-clusterbinding
+subjects:
+  - kind: ServiceAccount
+    name: tekton-triggers-sa
+    namespace: tekton-pipelines
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-eventlistener-clusterroles

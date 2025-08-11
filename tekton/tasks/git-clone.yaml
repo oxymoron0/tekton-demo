@@ -1,0 +1,41 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: git-clone
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: url
+      type: string
+      description: Repository URL to clone from
+    - name: revision
+      type: string
+      default: main
+      description: Git revision to checkout
+    - name: subdirectory
+      type: string
+      default: ""
+      description: Subdirectory inside the workspace to clone into
+  workspaces:
+    - name: output
+      description: The workspace where the source will be cloned
+  results:
+    - name: commit
+      description: The precise commit SHA after the clone
+  steps:
+    - name: clone
+      image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.40.2
+      script: |
+        #!/usr/bin/env sh
+        set -eu
+
+        CHECKOUT_DIR="$(workspaces.output.path)/$(params.subdirectory)"
+
+        /ko-app/git-init \
+          -url="$(params.url)" \
+          -revision="$(params.revision)" \
+          -path="$CHECKOUT_DIR"
+
+        cd "$CHECKOUT_DIR"
+        RESULT_SHA="$(git rev-parse HEAD)"
+        echo -n "$RESULT_SHA" > $(results.commit.path)

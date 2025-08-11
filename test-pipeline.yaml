@@ -1,0 +1,36 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: test-simple-build
+  namespace: tekton-pipelines
+spec:
+  pipelineRef:
+    name: ci-cd-pipeline
+  params:
+    - name: repo-url
+      value: https://github.com/oxymoron0/tekton_demo.git
+    - name: repo-revision
+      value: main
+    - name: image-name
+      value: tekton-demo-app
+    - name: image-registry
+      value: harbor.leorca.org/library
+    - name: manifest-repo
+      value: https://github.com/oxymoron0/tekton_demo.git
+    - name: environment
+      value: dev
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+    - name: docker-credentials
+      secret:
+        secretName: docker-credentials
+    - name: git-credentials
+      secret:
+        secretName: git-credentials

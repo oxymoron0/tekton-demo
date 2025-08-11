@@ -1,0 +1,72 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: update-manifest
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: MANIFEST_REPO
+      type: string
+      description: Git repository containing K8s manifests
+    - name: MANIFEST_PATH
+      type: string
+      description: Path to the deployment manifest
+    - name: NEW_IMAGE
+      type: string
+      description: Full image URL with new tag
+    - name: ENVIRONMENT
+      type: string
+      default: dev
+      description: Target environment (dev/staging/prod)
+  workspaces:
+    - name: manifest
+      description: Workspace for manifest repository
+    - name: ssh-directory
+      description: SSH keys for Git operations
+      optional: true
+  steps:
+    - name: git-clone-manifest
+      image: alpine/git:latest
+      workingDir: $(workspaces.manifest.path)
+      script: |
+        #!/bin/sh
+        set -e
+        
+        if [ -d "$(workspaces.ssh-directory.path)" ]; then
+          cp -R $(workspaces.ssh-directory.path) ~/.ssh
+          chmod 700 ~/.ssh
+          chmod 600 ~/.ssh/*
+        fi
+        
+        git clone $(params.MANIFEST_REPO) manifest-repo
+        cd manifest-repo
+        
+    - name: update-image
+      image: mikefarah/yq:4
+      workingDir: $(workspaces.manifest.path)/manifest-repo
+      script: |
+        #!/bin/sh
+        set -e
+        
+        echo "Updating image to: $(params.NEW_IMAGE)"
+        
+        # Update the image in the manifest
+        yq eval '.spec.template.spec.containers[0].image = "$(params.NEW_IMAGE)"' \
+          -i $(params.MANIFEST_PATH)
+        
+        # Show the change
+        cat $(params.MANIFEST_PATH)
+        
+    - name: git-commit-push
+      image: alpine/git:latest
+      workingDir: $(workspaces.manifest.path)/manifest-repo
+      script: |
+        #!/bin/sh
+        set -e
+        
+        git config --global user.email "tekton@ci-cd.local"
+        git config --global user.name "Tekton Pipeline"
+        
+        git add .
+        git commit -m "Update image to $(params.NEW_IMAGE) for $(params.ENVIRONMENT)"
+        git push origin main

@@ -1,0 +1,88 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ci-cd-pipeline
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: repo-url
+      type: string
+      description: The git repository URL
+    - name: repo-revision
+      type: string
+      default: main
+      description: The git revision
+    - name: image-name
+      type: string
+      description: Target image name
+    - name: image-registry
+      type: string
+      default: docker.io
+      description: Container registry
+    - name: manifest-repo
+      type: string
+      description: GitOps manifest repository
+    - name: environment
+      type: string
+      default: dev
+      description: Deployment environment
+  workspaces:
+    - name: shared-workspace
+    - name: docker-credentials
+      optional: true
+    - name: git-credentials
+      optional: true
+  tasks:
+    - name: git-clone
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.repo-revision)
+    - name: run-tests
+      taskRef:
+        name: run-tests
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      runAfter:
+        - git-clone
+    - name: build-push-image
+      taskRef:
+        name: build-push-image
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+        - name: dockerconfig
+          workspace: docker-credentials
+      params:
+        - name: IMAGE
+          value: $(params.image-registry)/$(params.image-name)
+        - name: TAG
+          value: $(tasks.git-clone.results.commit)
+      runAfter:
+        - run-tests
+    - name: update-manifest
+      taskRef:
+        name: update-manifest
+      workspaces:
+        - name: manifest
+          workspace: shared-workspace
+        - name: ssh-directory
+          workspace: git-credentials
+      params:
+        - name: MANIFEST_REPO
+          value: $(params.manifest-repo)
+        - name: MANIFEST_PATH
+          value: kubernetes/overlays/$(params.environment)/deployment.yaml
+        - name: NEW_IMAGE
+          value: $(tasks.build-push-image.results.IMAGE_URL)
+        - name: ENVIRONMENT
+          value: $(params.environment)
+      runAfter:
+        - build-push-image
