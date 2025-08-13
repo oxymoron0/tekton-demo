@@ -12,12 +12,20 @@ spec:
       type: string
       default: "http://harbor.harbor.svc.cluster.local"
       description: Harbor API URL
-  workspaces:
-    - name: docker-credentials
-      description: Docker registry credentials
   steps:
     - name: create-project
       image: curlimages/curl:latest
+      env:
+        - name: HARBOR_USER
+          valueFrom:
+            secretKeyRef:
+              name: harbor-registry-credentials
+              key: username
+        - name: HARBOR_PASS
+          valueFrom:
+            secretKeyRef:
+              name: harbor-registry-credentials
+              key: password
       script: |
         #!/bin/sh
         set -e
@@ -25,14 +33,7 @@ spec:
         PROJECT_NAME="$(params.project-name)"
         HARBOR_URL="$(params.harbor-url)"
         
-        # Read credentials from workspace
-        if [ -f "$(workspaces.docker-credentials.path)/username" ]; then
-          HARBOR_USER=$(cat "$(workspaces.docker-credentials.path)/username")
-          HARBOR_PASS=$(cat "$(workspaces.docker-credentials.path)/password")
-        else
-          echo "Error: Credentials not found in workspace"
-          exit 1
-        fi
+        # Use credentials from environment variables
         
         # Check if project exists
         echo "Checking if project ${PROJECT_NAME} exists..."
