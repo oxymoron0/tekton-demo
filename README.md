@@ -305,3 +305,9 @@ kubectl describe pod POD_NAME -n sample-app-dev
 
 코드를 푸시하고 자동으로 배포되는 과정을 경험해보세요. 현대적인 DevOps 방식으로 더 빠르고 안정적인 소프트웨어 배포를 실현할 수 있습니다.
 
+---
+
+# Pipeline Test
+
+### 2025-08-13 10:00
+- TEST
