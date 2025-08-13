@@ -314,3 +314,8 @@ kubectl describe pod POD_NAME -n sample-app-dev
   - tekton_demo-run-이라는 이름에 언더스코어(_)가 포함되어 있어서 Kubernetes 명명 규칙 위반
 ### 2025-08-13 10:35
 - TEST
+  - Image 업로드까지 확인, tekton pipelines Dashboard 확인까지 가능한!
+  - `kubectl apply -f https://storage.googleapis.com/tekton-releases/dashboard/latest/release.yaml`
+### 2025-08-13 15:11
+  - ArgoCD 업데이트 기능을 보류, 일단 Tasks 하나씩 추가해나가기
+  - 작동하는 Task 및 Pipeline 검증
