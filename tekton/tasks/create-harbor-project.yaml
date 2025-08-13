@@ -1,0 +1,74 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: create-harbor-project
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: project-name
+      type: string
+      description: Harbor project name to create
+    - name: harbor-url
+      type: string
+      default: "http://harbor.harbor.svc.cluster.local"
+      description: Harbor API URL
+  workspaces:
+    - name: docker-credentials
+      description: Docker registry credentials
+  steps:
+    - name: create-project
+      image: curlimages/curl:latest
+      script: |
+        #!/bin/sh
+        set -e
+        
+        PROJECT_NAME="$(params.project-name)"
+        HARBOR_URL="$(params.harbor-url)"
+        
+        # Read credentials from workspace
+        if [ -f "$(workspaces.docker-credentials.path)/username" ]; then
+          HARBOR_USER=$(cat "$(workspaces.docker-credentials.path)/username")
+          HARBOR_PASS=$(cat "$(workspaces.docker-credentials.path)/password")
+        else
+          echo "Error: Credentials not found in workspace"
+          exit 1
+        fi
+        
+        # Check if project exists
+        echo "Checking if project ${PROJECT_NAME} exists..."
+        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+          -u "${HARBOR_USER}:${HARBOR_PASS}" \
+          "${HARBOR_URL}/api/v2.0/projects?name=${PROJECT_NAME}")
+        
+        if [ "$RESPONSE" = "200" ]; then
+          # Check if project list is empty
+          PROJECT_EXISTS=$(curl -s -u "${HARBOR_USER}:${HARBOR_PASS}" \
+            "${HARBOR_URL}/api/v2.0/projects?name=${PROJECT_NAME}" | grep -c "\"name\":\"${PROJECT_NAME}\"" || true)
+          
+          if [ "$PROJECT_EXISTS" -gt 0 ]; then
+            echo "Project ${PROJECT_NAME} already exists"
+            exit 0
+          fi
+        fi
+        
+        # Create project
+        echo "Creating project ${PROJECT_NAME}..."
+        CREATE_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+          -u "${HARBOR_USER}:${HARBOR_PASS}" \
+          -X POST \
+          -H "Content-Type: application/json" \
+          -d "{\"project_name\": \"${PROJECT_NAME}\", \"public\": false}" \
+          "${HARBOR_URL}/api/v2.0/projects")
+        
+        if [ "$CREATE_RESPONSE" = "201" ] || [ "$CREATE_RESPONSE" = "409" ]; then
+          echo "Project ${PROJECT_NAME} created successfully or already exists"
+        else
+          echo "Failed to create project. Response code: $CREATE_RESPONSE"
+          # Try to get error details
+          curl -s -u "${HARBOR_USER}:${HARBOR_PASS}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -d "{\"project_name\": \"${PROJECT_NAME}\", \"public\": false}" \
+            "${HARBOR_URL}/api/v2.0/projects"
+          exit 1
+        fi

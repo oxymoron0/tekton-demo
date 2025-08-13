@@ -75,9 +75,9 @@ spec:
           - name: image-name
             value: $(tt.params.git-repo-name)
           - name: image-registry
-            value: ghcr.io/your-org  # Change this to your registry
+            value: harbor.harbor.svc.cluster.local/$(tt.params.git-repo-name)  # Harbor registry with project name
           - name: manifest-repo
-            value: https://github.com/your-org/k8s-manifests.git  # Change this
+            value: $(tt.params.git-repo-url)  # Use same repo from webhook
           - name: environment
             value: dev
         workspaces:
@@ -91,7 +91,7 @@ spec:
                     storage: 1Gi
           - name: docker-credentials
             secret:
-              secretName: docker-credentials
+              secretName: harbor-registry-credentials
           - name: git-credentials
             secret:
               secretName: git-credentials

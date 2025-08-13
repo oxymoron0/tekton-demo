@@ -52,6 +52,17 @@ spec:
           workspace: shared-workspace
       runAfter:
         - git-clone
+    - name: create-harbor-project
+      taskRef:
+        name: create-harbor-project
+      workspaces:
+        - name: docker-credentials
+          workspace: docker-credentials
+      params:
+        - name: project-name
+          value: $(params.image-name)
+      runAfter:
+        - run-tests
     - name: build-push-image
       taskRef:
         name: build-push-image
@@ -66,7 +77,7 @@ spec:
         - name: TAG
           value: $(tasks.git-clone.results.commit)
       runAfter:
-        - run-tests
+        - create-harbor-project
     - name: update-manifest
       taskRef:
         name: update-manifest
