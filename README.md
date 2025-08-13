@@ -40,15 +40,6 @@ Git Push → Tekton Trigger → Build & Test → Image Push → Manifest Update 
 │   │   └── ci-cd-pipeline.yaml
 │   └── triggers/            # Git 이벤트 트리거
 │       └── github-trigger.yaml
-├── kubernetes/              # Kubernetes 매니페스트
-│   ├── base/               # 기본 리소스
-│   │   ├── deployment.yaml
-│   │   ├── service.yaml
-│   │   └── kustomization.yaml
-│   └── overlays/           # 환경별 오버레이
-│       ├── dev/
-│       ├── staging/
-│       └── prod/
 └── argocd/                 # ArgoCD 애플리케이션
     └── application.yaml
 ```
@@ -125,23 +116,11 @@ kubectl create secret generic git-credentials \
 3. Content type: `application/json`
 4. Events: `Push events`, `Pull requests`
 
-## 🎯 사용 방법
-
-### 개발자 워크플로우
-1. **코드 수정**: 애플리케이션 코드 변경
-2. **Git Push**: `main` 브랜치에 푸시
-3. **자동 트리거**: Tekton이 자동으로 파이프라인 실행
-4. **결과 확인**: 
-   - 빌드 상태: Tekton Dashboard
-   - 배포 상태: ArgoCD Dashboard
-
 ### 파이프라인 단계
 1. **소스 코드 클론**: Git 저장소에서 코드 가져오기
 2. **테스트 실행**: Jest를 통한 단위 테스트
 3. **이미지 빌드**: Kaniko로 컨테이너 이미지 생성
 4. **이미지 푸시**: Container Registry에 업로드
-5. **매니페스트 업데이트**: GitOps 저장소의 이미지 태그 자동 업데이트
-6. **ArgoCD 동기화**: 클러스터에 새 버전 자동 배포
 
 ## 📊 모니터링 및 관리
 
@@ -173,27 +152,6 @@ kubectl logs -f -l tekton.dev/pipelineRun=PIPELINE_RUN_NAME -n tekton-pipelines
 # 작업 상태 확인
 kubectl get taskruns -n tekton-pipelines
 ```
-
-## 🔄 환경별 배포
-
-### Development 환경
-- **네임스페이스**: `sample-app-dev`
-- **리플리카**: 1개
-- **리소스**: 최소 사양
-- **자동 배포**: Git push 시 즉시
-
-### Staging 환경
-- **네임스페이스**: `sample-app-staging`
-- **리플리카**: 2개
-- **리소스**: 중간 사양
-- **배포**: 수동 승인 후
-
-### Production 환경
-- **네임스페이스**: `sample-app-prod`
-- **리플리카**: 3개
-- **리소스**: 높은 사양
-- **배포**: 다단계 승인 프로세스
-
 ## 🛠️ 커스터마이징
 
 ### 다른 언어 지원
@@ -211,27 +169,6 @@ kubectl get taskruns -n tekton-pipelines
   image: golang:1.19
   script: |
     go test ./...
-```
-
-### 보안 스캔 추가
-```yaml
-- name: security-scan
-  taskRef:
-    name: trivy-scanner
-  runAfter:
-    - build-push-image
-```
-
-### Slack 알림 통합
-```yaml
-- name: notify-slack
-  taskRef:
-    name: send-to-webhook-slack
-  params:
-    - name: webhook-secret
-      value: slack-webhook
-    - name: message
-      value: "Pipeline $(context.pipelineRun.name) completed"
 ```
 
 ## 🚨 트러블슈팅
@@ -264,48 +201,6 @@ kubectl get pods -n sample-app-dev
 kubectl describe pod POD_NAME -n sample-app-dev
 ```
 
-## 📈 확장 계획
-
-### 고급 기능
-- [ ] 멀티 클러스터 배포
-- [ ] Canary 배포 전략
-- [ ] 자동 롤백 메커니즘
-- [ ] 성능 테스트 통합
-- [ ] 보안 스캔 자동화
-
-### 통합 가능한 도구들
-- **Monitoring**: Prometheus + Grafana
-- **Logging**: ELK Stack
-- **Security**: Falco, OPA Gatekeeper
-- **Testing**: Selenium Grid
-- **Notification**: Slack, Microsoft Teams
-
-## 🤝 기여 방법
-
-1. 이슈 생성 또는 기존 이슈 확인
-2. 브랜치 생성: `git checkout -b feature/amazing-feature`
-3. 변경사항 커밋: `git commit -m 'Add amazing feature'`
-4. 브랜치 푸시: `git push origin feature/amazing-feature`
-5. Pull Request 생성
-
-## 📄 라이센스
-
-이 프로젝트는 MIT 라이센스 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
-
-## 🙋‍♂️ 지원
-
-질문이나 도움이 필요하시면:
-- GitHub Issues 생성
-- 문서 검토 및 업데이트 제안
-- 커뮤니티 포럼 참여
-
----
-
-**🎉 이제 완전한 CI/CD 파이프라인이 준비되었습니다!**
-
-코드를 푸시하고 자동으로 배포되는 과정을 경험해보세요. 현대적인 DevOps 방식으로 더 빠르고 안정적인 소프트웨어 배포를 실현할 수 있습니다.
-
----
 
 # Pipeline Test
 
