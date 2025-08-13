@@ -1,19 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: sample-app
+  name: tekton-demo-app
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
-    repoURL: https://github.com/your-org/k8s-manifests  # GitOps manifest repository
+    repoURL: https://github.com/oxymoron0/tekton-demo.git
     targetRevision: main
-    path: kubernetes/overlays/dev  # Environment-specific path
+    path: kubernetes/overlays/dev
   destination:
     server: https://kubernetes.default.svc
-    namespace: sample-app
+    namespace: tekton-demo
   syncPolicy:
     automated:
       prune: true
@@ -29,22 +29,3 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 3m
----
-apiVersion: argoproj.io/v1alpha1
-kind: AppProject
-metadata:
-  name: default
-  namespace: argocd
-spec:
-  description: Default project
-  sourceRepos:
-    - '*'
-  destinations:
-    - namespace: '*'
-      server: '*'
-  clusterResourceWhitelist:
-    - group: '*'
-      kind: '*'
-  namespaceResourceWhitelist:
-    - group: '*'
-      kind: '*'

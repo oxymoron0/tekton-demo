@@ -1,13 +1,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sample-app
+  name: tekton-demo-app
 spec:
   replicas: 1
   template:
     spec:
       containers:
-      - name: sample-app
+      - name: tekton-demo-app
         env:
         - name: NODE_ENV
           value: "development"
