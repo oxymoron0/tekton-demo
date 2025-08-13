@@ -1,0 +1,46 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: tekton-webhook-gateway
+  namespace: tekton-pipelines
+spec:
+  selector:
+    istio: ingress
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "tekton.leorca.org"
+    tls:
+      httpsRedirect: false
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - "tekton.leorca.org"
+    tls:
+      mode: SIMPLE
+      credentialName: leorca-org-tls
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: tekton-webhook-vs
+  namespace: tekton-pipelines
+spec:
+  hosts:
+  - "tekton.leorca.org"  # 모든 호스트 허용 (보안을 위해 나중에 특정 도메인으로 변경 권장)
+  gateways:
+  - tekton-webhook-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /hooks  # GitHub webhook 경로
+    route:
+    - destination:
+        host: el-github-listener.tekton-pipelines.svc.cluster.local
+        port:
+          number: 8080
