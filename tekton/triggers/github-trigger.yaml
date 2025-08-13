@@ -75,7 +75,7 @@ spec:
           - name: image-name
             value: $(tt.params.git-repo-name)
           - name: image-registry
-            value: harbor.harbor.svc.cluster.local/$(tt.params.git-repo-name)  # Harbor registry with project name
+            value: harbor.leorca.org/$(tt.params.git-repo-name)  # Harbor registry with project name
           - name: manifest-repo
             value: $(tt.params.git-repo-url)  # Use same repo from webhook
           - name: environment

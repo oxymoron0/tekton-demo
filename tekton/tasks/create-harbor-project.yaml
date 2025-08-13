@@ -10,7 +10,7 @@ spec:
       description: Harbor project name to create
     - name: harbor-url
       type: string
-      default: "http://harbor.harbor.svc.cluster.local"
+      default: "https://harbor.leorca.org"
       description: Harbor API URL
   steps:
     - name: create-project
