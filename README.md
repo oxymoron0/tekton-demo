@@ -311,3 +311,6 @@ kubectl describe pod POD_NAME -n sample-app-dev
 
 ### 2025-08-13 10:00
 - TEST
+  - tekton_demo-run-이라는 이름에 언더스코어(_)가 포함되어 있어서 Kubernetes 명명 규칙 위반
+### 2025-08-13 10:35
+- TEST
