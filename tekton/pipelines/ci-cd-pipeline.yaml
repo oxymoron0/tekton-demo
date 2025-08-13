@@ -44,14 +44,6 @@ spec:
           value: $(params.repo-url)
         - name: revision
           value: $(params.repo-revision)
-    - name: run-tests
-      taskRef:
-        name: run-tests
-      workspaces:
-        - name: source
-          workspace: shared-workspace
-      runAfter:
-        - git-clone
     - name: create-harbor-project
       taskRef:
         name: create-harbor-project
@@ -59,7 +51,7 @@ spec:
         - name: project-name
           value: $(params.image-name)
       runAfter:
-        - run-tests
+        - git-clone
     - name: build-push-image
       taskRef:
         name: build-push-image
@@ -75,22 +67,3 @@ spec:
           value: $(tasks.git-clone.results.commit)
       runAfter:
         - create-harbor-project
-    - name: update-manifest
-      taskRef:
-        name: update-manifest
-      workspaces:
-        - name: manifest
-          workspace: shared-workspace
-        - name: ssh-directory
-          workspace: git-credentials
-      params:
-        - name: MANIFEST_REPO
-          value: $(params.manifest-repo)
-        - name: MANIFEST_PATH
-          value: kubernetes/overlays/$(params.environment)/deployment.yaml
-        - name: NEW_IMAGE
-          value: $(tasks.build-push-image.results.IMAGE_URL)
-        - name: ENVIRONMENT
-          value: $(params.environment)
-      runAfter:
-        - build-push-image
