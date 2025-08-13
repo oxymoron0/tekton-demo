@@ -1,6 +1,6 @@
 # Tekton CI/CD Pipeline for Modern Application Deployment
 
-이 프로젝트는 Tekton을 기반으로 한 완전한 CI/CD 파이프라인을 제공합니다. GitOps 패턴을 활용하여 안정적이고 확장 가능한 배포 환경을 구축할 수 있습니다.
+이 프로젝트는 Tekton을 기반으로 CI/CD 파이프라인 예제입니다.
 
 ## 아키텍처 개요
 
