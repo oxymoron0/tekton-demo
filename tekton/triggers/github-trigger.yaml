@@ -11,6 +11,10 @@ spec:
         - ref:
             name: github
           params:
+            - name: secretRef
+              value:
+                secretName: github-webhook-secret
+                secretKey: secretToken
             - name: eventTypes
               value: ["push", "pull_request"]
         - ref:
